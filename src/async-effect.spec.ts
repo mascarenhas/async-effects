@@ -1,3 +1,4 @@
+import { getLatest } from './get-latest';
 import { ofType } from '@ngrx/effects';
 import { from, of, ReplaySubject, Subject } from 'rxjs';
 import { first, toArray, debounceTime } from 'rxjs/operators';
@@ -215,5 +216,23 @@ describe('asyncEffect', () => {
     const response = await effect.pipe(toArray()).toPromise();
     expect(handler).toHaveBeenCalledWith(mockAction1);
     expect(response).toEqual(mockResponse);
+  });
+
+  it('waits for two actions in sequence', async () => {
+    const mockAction1 = { type: 'ACTION1' };
+    const mockAction2 = { type: 'ACTION2' };
+    const mockActions = new Subject<{ type: string }>();
+    const handler = async function(action: any) {
+      expect(action).toBe(mockAction1);
+      await getLatest(mockActions.pipe(ofType(mockAction2.type)));
+      return mockAction2;
+    };
+    const effect = asyncEffect(mockActions.pipe(ofType(mockAction1.type)), handler);
+    const responsePromise = effect.pipe(toArray()).toPromise();
+    mockActions.next(mockAction1);
+    mockActions.next(mockAction2);
+    mockActions.complete();
+    const response = await responsePromise;
+    expect(response).toEqual([mockAction2]);
   });
 });
