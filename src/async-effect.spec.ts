@@ -1,40 +1,119 @@
-import { from, of, ReplaySubject, Subject } from 'rxjs';
+import { Action } from '@ngrx/store';
+import { from, of, ReplaySubject, Observable } from 'rxjs';
 import { first, toArray } from 'rxjs/operators';
 
-import { createEffect } from './async-effect';
+import { AsyncEffect } from './async-effect';
 import { tuple } from './tuple';
 
-describe('createEffect', () => {
+const mockAction1 = { type: 'ACTION1' };
+const mockAction2 = { type: 'ACTION2' };
+
+const logger1 = jest.fn();
+const logger2 = jest.fn();
+const logger3 = jest.fn();
+
+class FakeEffects {
+  constructor(public actions$: Observable<Action>) {}
+
+  @AsyncEffect(mockAction1.type)
+  async handler1() {
+    return mockAction2;
+  }
+
+  @AsyncEffect(mockAction1.type)
+  async handler2() {
+    return tuple({ type: 'ACTION2' }, { type: 'ACTION 2' });
+  }
+
+  @AsyncEffect(mockAction1.type, mockAction2.type)
+  async handler3({ type }: any) {
+    const firstResponse = tuple<Array<{ type: string }>>();
+    const secondResponse = tuple({ type: 'ACTION3' });
+    return type === 'ACTION1' ? firstResponse : secondResponse;
+  }
+
+  @AsyncEffect(mockAction1.type, mockAction2.type)
+  async handler4({ type }: any) {
+    const response = tuple({ type: 'ACTION3' });
+    if (type === 'ACTION1') {
+      throw 'error';
+    } else {
+      return response;
+    }
+  }
+
+  @AsyncEffect({ logger: logger1 }, mockAction1.type, mockAction2.type)
+  async handler5({ type }: any) {
+    const response = tuple({ type: 'ACTION3' });
+    if (type === 'ACTION1') {
+      throw 'error';
+    } else {
+      return response;
+    }
+  }
+
+  @AsyncEffect({ switch: true, logger: logger1 }, mockAction1.type, mockAction2.type)
+  async handler6({ type }: any) {
+    const response = tuple({ type: 'ACTION3' });
+    if (type === 'ACTION1') {
+      throw 'error';
+    } else {
+      return response;
+    }
+  }
+
+  @AsyncEffect({ debounce: 100, logger: logger1 }, mockAction1.type, mockAction2.type)
+  async handler7({ type }: any) {
+    const response = tuple({ type: 'ACTION3' });
+    if (type === 'ACTION1') {
+      throw 'error';
+    } else {
+      return response;
+    }
+  }
+
+  @AsyncEffect(mockAction1.type)
+  async *handler8(action: any) {
+    expect(action).toBe(mockAction1);
+    yield { type: 'ACTION2' };
+    yield { type: await Promise.resolve('ACTION 2') };
+  }
+
+  @AsyncEffect(mockAction1.type)
+  async *handler9(action: any) {
+    expect(action).toBe(mockAction1);
+    yield { type: 'ACTION2' };
+    yield { type: 'ACTION 2' };
+  }
+
+  @AsyncEffect(mockAction1.type)
+  handler10() {
+    return tuple({ type: 'ACTION2' }, { type: 'ACTION 2' });
+  }
+}
+
+describe('AsyncEffect', () => {
   it('passes action that matches type to handler and gets another action back', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
-    const handler = jest.fn(async () => mockAction2);
-    const mockActions = of(mockAction1);
-    const effect = createEffect(mockActions, handler, mockAction1.type);
+    const mockEffects: any = new FakeEffects(of(mockAction1));
+    const effect = mockEffects.handler1$();
     const response = await effect.toPromise();
-    expect(handler).toHaveBeenCalledWith(mockAction1);
     expect(response).toEqual(mockAction2);
   });
 
   it('passes action that matches type to handler and gets tuple of actions back', async () => {
-    const mockAction1 = { type: 'ACTION1' };
+    const mockEffects: any = new FakeEffects(of(mockAction1));
     const mockResponse = tuple({ type: 'ACTION2' }, { type: 'ACTION 2' });
-    const handler = jest.fn(async () => mockResponse);
-    const mockActions = of(mockAction1);
-    const effect = createEffect(mockActions, handler, mockAction1.type);
+    const effect = mockEffects.handler2$();
     const response = await effect.pipe(toArray()).toPromise();
-    expect(handler).toHaveBeenCalledWith(mockAction1);
     expect(response).toEqual(mockResponse);
   });
 
   it('does not return empty tuple of actions', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
+    const mockActions = new ReplaySubject<{ type: string }>();
+    const mockEffects: any = new FakeEffects(mockActions);
     const firstResponse = tuple<Array<{ type: string }>>();
     const secondResponse = tuple({ type: 'ACTION3' });
-    const handler = jest.fn(async ({ type }) => (type === 'ACTION1' ? firstResponse : secondResponse));
-    const mockActions = new ReplaySubject<{ type: string }>();
-    const effect = createEffect(mockActions, handler, mockAction1.type, mockAction2.type);
+    const effect = mockEffects.handler3$();
     const effectPromise = effect.pipe(first()).toPromise();
     mockActions.next(mockAction1);
     mockActions.next(mockAction2);
@@ -44,160 +123,84 @@ describe('createEffect', () => {
   });
 
   it('logs error without unwinding effect', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
     const response = tuple({ type: 'ACTION3' });
-    const err = new Error('error');
-    const handler = jest.fn(async ({ type }) => {
-      if (type === 'ACTION1') {
-        throw err;
-      } else {
-        return response;
-      }
-    });
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const mockActions = new ReplaySubject<{ type: string }>();
+    const mockEffects: any = new FakeEffects(mockActions);
     mockActions.next(mockAction1);
     mockActions.next(mockAction2);
-    const effect = createEffect(mockActions, handler, mockAction1.type, mockAction2.type);
+    const effect = mockEffects.handler4$();
     const effectPromise = effect.pipe(first()).toPromise();
     mockActions.complete();
     const actualResponse = await effectPromise;
-    expect(console.error).toHaveBeenCalledWith('Effect error:', err);
+    expect(console.error).toHaveBeenCalledWith('Effect error:', 'error');
     expect(actualResponse).toEqual(response[0]);
   });
 
   it('logs error with optional logger wihout unwinding effect', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
     const response = tuple({ type: 'ACTION3' });
-    const err = new Error('error');
-    const handler = jest.fn(async ({ type }) => {
-      if (type === 'ACTION1') {
-        throw err;
-      } else {
-        return response;
-      }
-    });
-    const logger = jest.fn();
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const mockActions = new ReplaySubject<{ type: string }>();
+    const mockEffects: any = new FakeEffects(mockActions);
     mockActions.next(mockAction1);
     mockActions.next(mockAction2);
-    const effect = createEffect(mockActions, handler, { logger }, mockAction1.type, mockAction2.type);
+    const effect = mockEffects.handler5$();
     const effectPromise = effect.pipe(first()).toPromise();
     mockActions.complete();
     const actualResponse = await effectPromise;
-    expect(logger).toHaveBeenCalledWith(err);
+    expect(logger1).toHaveBeenCalledWith('error');
     expect(actualResponse).toEqual(response[0]);
   });
 
-  it('logs error with optional logger unwinding effect with switch', done => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
-    const response = tuple({ type: 'ACTION3' });
-    const err = new Error('error');
-    const handler = jest.fn(async ({ type }) => {
-      if (type === 'ACTION1') {
-        throw err;
-      } else {
-        return response;
-      }
-    });
-    const mockActions = new Subject<{ type: string }>();
-    const logger = jest.fn(() => mockActions.next(mockAction2));
-    const effect = createEffect(mockActions, handler, { switch: true, logger }, mockAction1.type, mockAction2.type);
-    effect.subscribe(actualResponse => {
-      expect(logger).toHaveBeenCalledWith(err);
-      expect(actualResponse).toEqual(response[0]);
-      done();
-    });
-    mockActions.next(mockAction1);
-  });
-
   it('uses switchMap instead of flatMap if passes switch: true', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
     const response = tuple({ type: 'ACTION3' });
-    const err = new Error('error');
-    const handler = jest.fn(async ({ type }) => {
-      if (type === 'ACTION1') {
-        throw err;
-      } else {
-        return response;
-      }
-    });
-    const logger = jest.fn();
     const mockActions = new ReplaySubject<{ type: string }>();
+    const mockEffects: any = new FakeEffects(mockActions);
     mockActions.next(mockAction1);
     mockActions.next(mockAction2);
-    const effect = createEffect(mockActions, handler, { switch: true, logger }, mockAction1.type, mockAction2.type);
+    const effect = mockEffects.handler6$();
     const effectPromise = effect.pipe(first()).toPromise();
     mockActions.complete();
     const actualResponse = await effectPromise;
-    expect(logger).not.toHaveBeenCalled();
+    expect(logger2).not.toHaveBeenCalled();
     expect(actualResponse).toEqual(response[0]);
   });
 
   it('debounces input stream if debounce period set', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockAction2 = { type: 'ACTION2' };
     const response = tuple({ type: 'ACTION3' });
-    const err = new Error('error');
-    const handler = jest.fn(async ({ type }) => {
-      if (type === 'ACTION1') {
-        throw err;
-      } else {
-        return response;
-      }
-    });
-    const logger = jest.fn();
     const mockActions = new ReplaySubject<{ type: string }>();
+    const mockEffects: any = new FakeEffects(mockActions);
     mockActions.next(mockAction1);
-    const effect = createEffect(mockActions, handler, { debounce: 1000, logger }, mockAction1.type, mockAction2.type);
-    const effectPromise = effect.pipe(first()).toPromise();
     mockActions.next(mockAction2);
+    const effect = mockEffects.handler7$();
+    const effectPromise = effect.pipe(first()).toPromise();
     mockActions.complete();
     const actualResponse = await effectPromise;
-    expect(logger).not.toHaveBeenCalled();
+    expect(logger3).not.toHaveBeenCalled();
     expect(actualResponse).toEqual(response[0]);
   });
 
   it('passes action that matches type to async generator handler and gets tuple of actions back', async () => {
-    const mockAction1 = { type: 'ACTION1' };
     const mockResponse = [{ type: 'ACTION2' }, { type: 'ACTION2' }, { type: 'ACTION 2' }, { type: 'ACTION 2' }];
-    const handler = async function*(action: any) {
-      expect(action).toBe(mockAction1);
-      yield { type: 'ACTION2' };
-      yield { type: await Promise.resolve('ACTION 2') };
-    };
-    const mockActions = from([mockAction1, mockAction1]);
-    const effect = createEffect(mockActions, handler, mockAction1.type);
+    const mockEffects: any = new FakeEffects(from([mockAction1, mockAction1]));
+    const effect = mockEffects.handler8$();
     const response = await effect.pipe(toArray()).toPromise();
     expect(response).toEqual(mockResponse);
   });
 
   it('passes action that matches type to generator handler and gets tuple of actions back', async () => {
-    const mockAction1 = { type: 'ACTION1' };
     const mockResponse = [{ type: 'ACTION2' }, { type: 'ACTION2' }, { type: 'ACTION 2' }, { type: 'ACTION 2' }];
-    const handler = function*(action: any) {
-      expect(action).toBe(mockAction1);
-      yield { type: 'ACTION2' };
-      yield { type: 'ACTION 2' };
-    };
-    const mockActions = from([mockAction1, mockAction1]);
-    const effect = createEffect(mockActions, handler, mockAction1.type);
+    const mockEffects: any = new FakeEffects(from([mockAction1, mockAction1]));
+    const effect = mockEffects.handler9$();
     const response = await effect.pipe(toArray()).toPromise();
     expect(response).toEqual(mockResponse);
   });
 
   it('passes action that matches type to handler and gets tuple of actions back synchronously', async () => {
-    const mockAction1 = { type: 'ACTION1' };
     const mockResponse = tuple({ type: 'ACTION2' }, { type: 'ACTION 2' });
-    const handler = jest.fn(() => mockResponse);
-    const mockActions = of(mockAction1);
-    const effect = createEffect(mockActions, handler, mockAction1.type);
+    const mockEffects: any = new FakeEffects(of(mockAction1));
+    const effect = mockEffects.handler10$();
     const response = await effect.pipe(toArray()).toPromise();
-    expect(handler).toHaveBeenCalledWith(mockAction1);
     expect(response).toEqual(mockResponse);
   });
 });
