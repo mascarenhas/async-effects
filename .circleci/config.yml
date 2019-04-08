@@ -8,6 +8,7 @@ jobs:
 
     steps:
       - checkout
-      - run: npm ci && lerna bootstrap
+      - run: npm install
+      - run: npx lerna bootstrap
       - run: npm test
       - run: npm run build
