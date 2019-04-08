@@ -1,0 +1,61 @@
+{
+  "name": "ngrx-async-effect",
+  "version": "0.1.0",
+  "description": "Decorator for writing NgRx effects using async methods and/or async generator methods.",
+  "main": "lib/src/index.js",
+  "types": "lib/src/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare" : "npm run build",
+    "prepublishOnly" : "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mascarenhas/async-effects.git"
+  },
+  "keywords": [
+    "ngrx",
+    "async",
+    "effects",
+    "sagas",
+    "generators"
+  ],
+  "author": "Fabio Mascarenhas <fabio.mascarenhas@rangle.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mascarenhas/async-effects/issues"
+  },
+  "homepage": "https://github.com/mascarenhas/async-effects#readme",
+  "dependencies": {
+    "redux-async-effect": "0.1.0"
+  },
+  "devDependencies": {
+    "@angular/core": "^7.2.12",
+    "@ngrx/store": "^7.4.0",
+    "@ngrx/effects": "^7.4.0",
+    "@types/jest": "^24.0.11",
+    "jest": "^24.7.1",
+    "prettier": "^1.16.4",
+    "rxjs": "^6.4.0",
+    "ts-jest": "^24.0.1",
+    "typescript": "~3.2.4"
+  },
+  "files": [
+    "lib"
+  ],
+  "jest": {
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testRegex": "(\\.|/)spec\\.ts$",
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "moduleNameMapper": {
+      "redux-async-effect": "<rootDir>/../redux-async-effect/src"
+    }
+  }
+}

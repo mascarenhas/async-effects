@@ -1,10 +1,14 @@
 import { getLatest } from './get-latest';
-import { ofType } from '@ngrx/effects';
 import { from, of, ReplaySubject, Subject } from 'rxjs';
-import { first, toArray, debounceTime } from 'rxjs/operators';
+import { first, filter, toArray, debounceTime } from 'rxjs/operators';
 
 import { asyncEffect } from './async-effect';
 import { tuple } from './tuple';
+import { Action } from './action';
+
+function ofType(...types: string[]) {
+  return filter((action: Action) => types.includes(action.type))
+}
 
 describe('asyncEffect', () => {
   it('passes action that matches type to handler and gets another action back', async () => {

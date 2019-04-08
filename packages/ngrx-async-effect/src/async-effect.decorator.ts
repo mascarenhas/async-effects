@@ -3,7 +3,7 @@ import { Action } from '@ngrx/store';
 import { identity } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
-import { AsyncEffectConfig, asyncEffect } from './async-effect';
+import { AsyncEffectConfig, asyncEffect } from 'redux-async-effect';
 
 /**
  * Method decorator to handle NgRx affects with async

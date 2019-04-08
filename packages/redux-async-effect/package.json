@@ -1,0 +1,52 @@
+{
+  "name": "redux-async-effect",
+  "version": "0.1.0",
+  "description": "Consume a stream of Redux actions and dispatch new actions with an async function/method or generator",
+  "main": "lib/src/index.js",
+  "types": "lib/src/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare" : "npm run build",
+    "prepublishOnly" : "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mascarenhas/async-effects.git"
+  },
+  "keywords": [
+    "ngrx",
+    "async",
+    "effects",
+    "sagas",
+    "generators"
+  ],
+  "author": "Fabio Mascarenhas <fabio.mascarenhas@rangle.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mascarenhas/async-effects/issues"
+  },
+  "homepage": "https://github.com/mascarenhas/async-effects#readme",
+  "devDependencies": {
+    "@types/jest": "^24.0.11",
+    "jest": "^24.7.1",
+    "prettier": "^1.16.4",
+    "rxjs": "^6.4.0",
+    "ts-jest": "^24.0.1",
+    "typescript": "~3.2.4"
+  },
+  "files": [
+    "lib"
+  ],
+  "jest": {
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testRegex": "(\\.|/)spec\\.ts$",
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ]
+  }
+}

@@ -3,7 +3,7 @@ import { from, of, ReplaySubject, Observable } from 'rxjs';
 import { first, toArray } from 'rxjs/operators';
 
 import { AsyncEffect } from './async-effect.decorator';
-import { tuple } from './tuple';
+import { tuple } from 'redux-async-effect';
 
 const mockAction1 = { type: 'ACTION1' };
 const mockAction2 = { type: 'ACTION2' };

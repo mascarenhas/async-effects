@@ -20,7 +20,14 @@
       "esnext",
       "dom"
     ],
+    "paths": {
+      "redux-async-effect": ["../redux-async-effect/src"]
+    },
+    "composite": true
   },
+  "references": [
+    { "path": "../redux-async-effect" }
+  ],
   "exclude": [
     "lib",
     "node_modules",

@@ -1,1 +1,1 @@
-# NgRx AsyncEffect
+# Async Effects

@@ -1,6 +1,7 @@
-import { Action } from '@ngrx/store';
 import { from, identity, of, Observable } from 'rxjs';
 import { catchError, filter, flatMap, switchMap } from 'rxjs/operators';
+
+import { Action } from './action';
 
 export interface AsyncEffectConfig {
   readonly switch?: boolean;
