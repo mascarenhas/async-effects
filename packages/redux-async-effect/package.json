@@ -45,13 +45,11 @@
     "lib-esm"
   ],
   "jest": {
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "testRegex": "(\\.|/)spec\\.ts$",
-    "moduleFileExtensions": [
-      "ts",
-      "js"
-    ]
+    "preset": "ts-jest",
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "./src/tsconfig.spec.json"
+      }
+    }
   }
 }

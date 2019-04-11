@@ -46,16 +46,14 @@
     "lib"
   ],
   "jest": {
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "testRegex": "(\\.|/)spec\\.ts$",
-    "moduleFileExtensions": [
-      "ts",
-      "js"
-    ],
+    "preset": "ts-jest",
     "moduleNameMapper": {
       "redux-async-effect": "<rootDir>/../redux-async-effect/src"
+    },
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "./src/tsconfig.spec.json"
+      }
     }
   }
 }
