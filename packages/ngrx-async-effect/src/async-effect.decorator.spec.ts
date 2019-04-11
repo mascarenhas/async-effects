@@ -14,9 +14,9 @@ const logger3 = jest.fn();
 
 class FakeEffects {
   constructor(
-    public actions$?: Observable<Action>,
-    public otherActions$?: Observable<Action>,
-    public otherStream$?: Observable<string>
+    public actions$: Observable<Action> = of(),
+    public otherActions$: Observable<Action> = of(),
+    public otherStream$: Observable<string> = of()
   ) {}
 
   @AsyncEffect(mockAction1.type)
@@ -30,14 +30,14 @@ class FakeEffects {
   }
 
   @AsyncEffect(mockAction1.type, mockAction2.type)
-  async handler3({ type }: any) {
+  async handler3({ type }: Action) {
     const firstResponse = tuple<Array<{ type: string }>>();
     const secondResponse = tuple({ type: 'ACTION3' });
     return type === 'ACTION1' ? firstResponse : secondResponse;
   }
 
   @AsyncEffect(mockAction1.type, mockAction2.type)
-  async handler4({ type }: any) {
+  async handler4({ type }: Action) {
     const response = tuple({ type: 'ACTION3' });
     if (type === 'ACTION1') {
       throw 'error';
@@ -47,7 +47,7 @@ class FakeEffects {
   }
 
   @AsyncEffect({ logger: logger1 }, mockAction1.type, mockAction2.type)
-  async handler5({ type }: any) {
+  async handler5({ type }: Action) {
     const response = tuple({ type: 'ACTION3' });
     if (type === 'ACTION1') {
       throw 'error';
@@ -57,7 +57,7 @@ class FakeEffects {
   }
 
   @AsyncEffect({ switch: true, logger: logger1 }, mockAction1.type, mockAction2.type)
-  async handler6({ type }: any) {
+  async handler6({ type }: Action) {
     const response = tuple({ type: 'ACTION3' });
     if (type === 'ACTION1') {
       throw 'error';
@@ -67,7 +67,7 @@ class FakeEffects {
   }
 
   @AsyncEffect({ debounce: 100, logger: logger1 }, mockAction1.type, mockAction2.type)
-  async handler7({ type }: any) {
+  async handler7({ type }: Action) {
     const response = tuple({ type: 'ACTION3' });
     if (type === 'ACTION1') {
       throw 'error';
@@ -77,14 +77,14 @@ class FakeEffects {
   }
 
   @AsyncEffect(mockAction1.type)
-  async *handler8(action: any) {
+  async *handler8(action: Action) {
     expect(action).toBe(mockAction1);
     yield { type: 'ACTION2' };
     yield { type: await Promise.resolve('ACTION 2') };
   }
 
   @AsyncEffect(mockAction1.type)
-  async *handler9(action: any) {
+  async *handler9(action: Action) {
     expect(action).toBe(mockAction1);
     yield { type: 'ACTION2' };
     yield { type: 'ACTION 2' };
@@ -96,7 +96,7 @@ class FakeEffects {
   }
 
   @AsyncEffect({ stream: 'otherActions$' })
-  async handler11(action: any) {
+  async handler11(action: Action) {
     return action;
   }
 
