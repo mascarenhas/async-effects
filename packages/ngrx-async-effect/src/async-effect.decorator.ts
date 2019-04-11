@@ -25,7 +25,7 @@ import { AsyncEffectConfig, asyncEffect } from 'redux-async-effect';
  * configuration keys: passing switch as true will make the
  * effect use a switchMap instead of flatMap for processing the
  * promises it gets from the handler; passing a debounce time (in ms)
- * in the debounce field will make it debounce the input stream 
+ * in the debounce field will make it debounce the input stream
  * by that time before passing it to the handler; passing a logging
  * function in the logger field will make the effect call that function
  * with any errors instead of logging to the console; finally, passing
@@ -38,15 +38,10 @@ import { AsyncEffectConfig, asyncEffect } from 'redux-async-effect';
  * @param actionTypes types of actions this effect fires on
  */
 export function AsyncEffect(
-  typeOrConfig: string | (AsyncEffectConfig & { debounce?: number, stream?: string }),
+  typeOrConfig: string | (AsyncEffectConfig & { debounce?: number; stream?: string }),
   ...actionTypes: string[]
 ) {
-  return <
-    T extends { [member: string]: any },
-    K extends Extract<keyof T, string>,
-    A,
-    R extends Action | Action[]
-  >(
+  return <T extends { [member: string]: any }, K extends Extract<keyof T, string>, A, R extends Action | Action[]>(
     target: T, // This is the prototype, not an instance
     propertyKey: K,
     descriptor: TypedPropertyDescriptor<
@@ -59,8 +54,10 @@ export function AsyncEffect(
     // because we need this to be dynamically bound to the instance
     // holding the effects at runtime
     target[effectKey] = function() {
-      const actions$ = (typeof typeOrConfig === 'string' || !typeOrConfig.stream) ?
-        this.actions$ as Actions : this[typeOrConfig.stream] as Actions;
+      const actions$ =
+        typeof typeOrConfig === 'string' || !typeOrConfig.stream
+          ? (this.actions$ as Actions)
+          : (this[typeOrConfig.stream] as Actions);
       return typeof typeOrConfig === 'string'
         ? asyncEffect(actions$.pipe(ofType(typeOrConfig, ...actionTypes)), handler.bind(this))
         : asyncEffect(

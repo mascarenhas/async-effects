@@ -7,7 +7,7 @@ import { tuple } from './tuple';
 import { Action } from './action';
 
 function ofType(...types: string[]) {
-  return filter((action: Action) => types.includes(action.type))
+  return filter((action: Action) => types.includes(action.type));
 }
 
 describe('asyncEffect', () => {
