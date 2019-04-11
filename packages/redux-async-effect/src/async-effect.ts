@@ -1,4 +1,4 @@
-import { from, identity, of, Observable } from 'rxjs';
+import { from, of, Observable } from 'rxjs';
 import { catchError, filter, flatMap, switchMap } from 'rxjs/operators';
 
 import { Action } from './action';
@@ -39,7 +39,7 @@ export function asyncEffect<T, R extends Action | Action[]>(
   input: Observable<T>,
   handler: (value: T) => Promise<void | undefined | R> | AsyncIterator<R> | Iterator<R> | R,
   config: AsyncEffectConfig = {}
-) {
+): Observable<R & Action> {
   return input.pipe(
     (config.switch ? switchMap : flatMap)(value => {
       const handlerResult = handler(value);
@@ -79,6 +79,6 @@ export function asyncEffect<T, R extends Action | Action[]>(
         })
       );
     }),
-    filter(identity)
+    filter(x => x !== undefined)
   );
 }

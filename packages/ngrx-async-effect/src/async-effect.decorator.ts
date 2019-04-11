@@ -1,9 +1,23 @@
-import { ofType, Actions, Effect } from '@ngrx/effects';
+import { Effect } from '@ngrx/effects';
 import { Action } from '@ngrx/store';
-import { identity } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { identity, Observable, MonoTypeOperatorFunction } from 'rxjs';
+import { filter, debounceTime } from 'rxjs/operators';
 
 import { AsyncEffectConfig, asyncEffect } from 'redux-async-effect';
+
+function ofType<A>(...types: string[]): MonoTypeOperatorFunction<A> {
+  if (types.length === 0) {
+    return (value: Observable<A>) => identity(value);
+  } else {
+    return filter<A>((value: any) => {
+      if (typeof value.type !== 'string') {
+        return true;
+      } else {
+        return types.includes(value.type);
+      }
+    });
+  }
+}
 
 /**
  * Method decorator to handle NgRx effects with async
@@ -37,12 +51,12 @@ import { AsyncEffectConfig, asyncEffect } from 'redux-async-effect';
  * @param typeOrConfig optional configuration object, or the first action type effect fires on
  * @param actionTypes types of actions this effect fires on
  */
-export function AsyncEffect(
-  typeOrConfig: string | (AsyncEffectConfig & { debounce?: number; stream?: string }),
+export function AsyncEffect<S extends string = 'actions$'>(
+  typeOrConfig: string | (AsyncEffectConfig & { debounce?: number; stream?: S }),
   ...actionTypes: string[]
 ) {
   return <T extends { [member: string]: any }, K extends Extract<keyof T, string>, A, R extends Action | Action[]>(
-    target: T, // This is the prototype, not an instance
+    target: T[S] extends Observable<A> ? T : never, // This is the prototype, not an instance
     propertyKey: K,
     descriptor: TypedPropertyDescriptor<
       T[K] & ((action: A) => Promise<void | undefined | R> | AsyncIterator<R> | Iterator<R> | R)
@@ -56,12 +70,12 @@ export function AsyncEffect(
     target[effectKey] = function() {
       const actions$ =
         typeof typeOrConfig === 'string' || !typeOrConfig.stream
-          ? (this.actions$ as Actions)
-          : (this[typeOrConfig.stream] as Actions);
+          ? (this.actions$ as Observable<A>)
+          : (this[typeOrConfig.stream] as Observable<A>);
       return typeof typeOrConfig === 'string'
-        ? asyncEffect(actions$.pipe(ofType(typeOrConfig, ...actionTypes)), handler.bind(this))
-        : asyncEffect(
-            actions$.pipe(
+        ? asyncEffect<A, R>(actions$.pipe<A>(ofType<any>(typeOrConfig, ...actionTypes)), handler.bind(this))
+        : asyncEffect<A, R>(
+            actions$.pipe<A, A>(
               actionTypes.length > 0 ? ofType(...actionTypes) : identity,
               typeOrConfig.debounce ? debounceTime(typeOrConfig.debounce) : identity
             ),
