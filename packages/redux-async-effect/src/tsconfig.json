@@ -18,10 +18,7 @@
       "esnext",
       "dom"
     ],
+    "types": ["jest"],    
     "composite": true,
-  },
-  "exclude": [
-    "*.spec.ts",
-    "**/*.spec.ts"
-  ]
+  }
 }

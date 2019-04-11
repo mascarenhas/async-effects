@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "cd src && tsc && tsc -m es6 --outDir ../lib-esm",
+    "build": "cd src && tsc --p ./tsconfig.lib.json && tsc --p ./tsconfig.lib.json -m es6 --outDir ../lib-esm",
     "test": "jest",
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare" : "npm run build",

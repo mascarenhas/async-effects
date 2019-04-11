@@ -3,7 +3,7 @@ import { Action } from '@ngrx/store';
 import { identity, Observable, MonoTypeOperatorFunction } from 'rxjs';
 import { filter, debounceTime } from 'rxjs/operators';
 
-import { AsyncEffectConfig, asyncEffect } from 'redux-async-effect';
+import { asyncEffect, AsyncEffectConfig, AsyncIterator } from 'redux-async-effect';
 
 function ofType<A>(...types: string[]): MonoTypeOperatorFunction<A> {
   if (types.length === 0) {
@@ -13,7 +13,7 @@ function ofType<A>(...types: string[]): MonoTypeOperatorFunction<A> {
       if (typeof value.type !== 'string') {
         return true;
       } else {
-        return types.includes(value.type);
+        return types.indexOf(value.type) !== -1;
       }
     });
   }
@@ -59,7 +59,7 @@ export function AsyncEffect<S extends string = 'actions$'>(
     target: T[S] extends Observable<A> ? T : never, // This is the prototype, not an instance
     propertyKey: K,
     descriptor: TypedPropertyDescriptor<
-      T[K] & ((action: A) => Promise<void | undefined | R> | AsyncIterator<R> | Iterator<R> | R)
+      T[K] & ((action: A) => Promise<R> | Promise<void | R> | AsyncIterator<R> | Iterator<R> | R | void)
     >
   ) => {
     const handler = descriptor.value!;

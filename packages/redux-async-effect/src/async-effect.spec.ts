@@ -7,7 +7,7 @@ import { tuple } from './tuple';
 import { Action } from './action';
 
 function ofType(...types: string[]) {
-  return filter((action: Action) => types.includes(action.type));
+  return filter((action: Action) => types.indexOf(action.type) !== -1);
 }
 
 describe('asyncEffect', () => {
@@ -23,13 +23,14 @@ describe('asyncEffect', () => {
   });
 
   it('passes action that matches type to handler and gets tuple of actions back', async () => {
-    const mockAction1 = { type: 'ACTION1' };
-    const mockResponse = tuple({ type: 'ACTION2' }, { type: 'ACTION 2' });
-    const handler = jest.fn(async () => mockResponse);
+    const mockAction1: Action<'ACTION1'> = { type: 'ACTION1' };
+    const mockAction2: Action<'ACTION2'> = { type: 'ACTION2' };
+    const mockAction3: Action<'ACTION3'> = { type: 'ACTION3' };
+    const mockResponse = tuple(mockAction2, mockAction3);
+    const handler = async () => mockResponse;
     const mockActions = of(mockAction1);
     const effect = asyncEffect(mockActions.pipe(ofType(mockAction1.type)), handler);
     const response = await effect.pipe(toArray()).toPromise();
-    expect(handler).toHaveBeenCalledWith(mockAction1);
     expect(response).toEqual(mockResponse);
   });
 

@@ -3,6 +3,10 @@ import { catchError, filter, flatMap, switchMap } from 'rxjs/operators';
 
 import { Action } from './action';
 
+export interface AsyncIterator<R> {
+  next: () => Promise<{ done: boolean; value: R }>;
+}
+
 export interface AsyncEffectConfig {
   readonly switch?: boolean;
   readonly logger?: (err: any) => any;
@@ -37,48 +41,47 @@ function isIterator<R>(value: any): value is AsyncIterator<R> | Iterator<R> {
  */
 export function asyncEffect<T, R extends Action | Action[]>(
   input: Observable<T>,
-  handler: (value: T) => Promise<void | undefined | R> | AsyncIterator<R> | Iterator<R> | R,
+  handler: (value: T) => Promise<R> | Promise<void | R> | AsyncIterator<R> | Iterator<R> | R | void,
   config: AsyncEffectConfig = {}
-): Observable<R & Action> {
-  return input.pipe(
-    (config.switch ? switchMap : flatMap)(value => {
-      const handlerResult = handler(value);
-      let output: Observable<void | R>;
-      if (handlerResult instanceof Promise) {
-        output = from(handlerResult);
-      } else if (isIterator(handlerResult)) {
-        output = new Observable<R>(subscriber => {
-          let live = true;
-          const loop = async () => {
-            while (live) {
-              const { value: action, done } = await handlerResult.next();
-              if (done) {
-                break;
-              } else {
-                subscriber.next(action);
-              }
+): Observable<R extends (infer X)[] ? X : R> {
+  const innerStream = (value: T) => {
+    const handlerResult = handler(value);
+    let output: Observable<void | R>;
+    if (handlerResult instanceof Promise) {
+      output = from(handlerResult);
+    } else if (isIterator(handlerResult)) {
+      output = new Observable<R>(subscriber => {
+        let live = true;
+        const loop = async () => {
+          while (live) {
+            const { value: action, done } = await handlerResult.next();
+            if (done) {
+              break;
+            } else {
+              subscriber.next(action);
             }
-          };
-          loop().then(() => subscriber.complete(), err => subscriber.error(err));
-          return () => {
-            live = false;
-          };
-        });
-      } else {
-        output = of(handlerResult);
-      }
-      return output.pipe(
-        flatMap(actions => (Array.isArray(actions) ? actions : of(actions))),
-        catchError(err => {
-          if (config.logger) {
-            config.logger(err);
-          } else {
-            console.error('Effect error:', err);
           }
-          return of<undefined>();
-        })
-      );
-    }),
-    filter(x => x !== undefined)
-  );
+        };
+        loop().then(() => subscriber.complete(), err => subscriber.error(err));
+        return () => {
+          live = false;
+        };
+      });
+    } else {
+      output = of(handlerResult);
+    }
+    return output.pipe(
+      flatMap(actions => (Array.isArray(actions) ? actions : of(actions))),
+      catchError(err => {
+        if (config.logger) {
+          config.logger(err);
+        } else {
+          console.error('Effect error:', err);
+        }
+        return of<void>();
+      }),
+      filter(x => x !== undefined)
+    );
+  };
+  return input.pipe(config.switch ? switchMap(innerStream) : flatMap(innerStream));
 }

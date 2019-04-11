@@ -21,13 +21,10 @@
     "paths": {
       "redux-async-effect": ["../redux-async-effect/src"]
     },
+    "types": ["jest"],
     "composite": true
   },
   "references": [
     { "path": "../../redux-async-effect/src" }
-  ],
-  "exclude": [
-    "*.spec.ts",
-    "**/*.spec.ts"
   ]
 }
