@@ -2,8 +2,8 @@
   "name": "ngrx-async-effect",
   "version": "0.1.0",
   "description": "Decorator for writing NgRx effects using async methods and/or async generator methods.",
-  "main": "lib/src/index.js",
-  "types": "lib/src/index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "cd src && tsc && tsc -m es6 --outDir ../lib-esm",
     "test": "jest",
@@ -43,7 +43,8 @@
     "typescript": "~3.2.4"
   },
   "files": [
-    "lib"
+    "lib",
+    "lib-esm"
   ],
   "jest": {
     "preset": "ts-jest",
