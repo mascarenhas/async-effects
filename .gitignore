@@ -2,6 +2,7 @@
 
 # compiled output
 packages/*/lib
+packages/*/lib-esm
 
 # dependencies
 node_modules

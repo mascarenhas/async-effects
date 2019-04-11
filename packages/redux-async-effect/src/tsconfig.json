@@ -2,8 +2,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
-    "importHelpers": true,
-    "outDir": "./lib",
+    "outDir": "../lib",
     "strict": true,
     "sourceMap": true,
     "declaration": true,
@@ -15,22 +14,13 @@
     "typeRoots": [
       "node_modules/@types"
     ],
-    "types": ["jest"],
     "lib": [
       "esnext",
       "dom"
     ],
-    "paths": {
-      "redux-async-effect": ["../redux-async-effect/src"]
-    },
-    "composite": true
+    "composite": true,
   },
-  "references": [
-    { "path": "../redux-async-effect" }
-  ],
   "exclude": [
-    "lib",
-    "node_modules",
     "*.spec.ts",
     "**/*.spec.ts"
   ]

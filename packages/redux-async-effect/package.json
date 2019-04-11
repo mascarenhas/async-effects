@@ -1,11 +1,11 @@
 {
   "name": "redux-async-effect",
   "version": "0.1.0",
-  "description": "Consume a stream of Redux actions and dispatch new actions with an async function/method or generator",
-  "main": "lib/src/index.js",
-  "types": "lib/src/index.d.ts",
+  "description": "Consume a stream of and emit Redux actions with an async function/method or generator",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "cd src && tsc && tsc -m es6 --outDir ../lib-esm",
     "test": "jest",
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare" : "npm run build",
@@ -28,6 +28,10 @@
     "url": "https://github.com/mascarenhas/async-effects/issues"
   },
   "homepage": "https://github.com/mascarenhas/async-effects#readme",
+  "peerDependencies": {
+    "rxjs": "^6.0.0",
+    "typescript": ">=3.1"
+  },
   "devDependencies": {
     "@types/jest": "^24.0.11",
     "jest": "^24.7.1",
@@ -37,7 +41,8 @@
     "typescript": "~3.2.4"
   },
   "files": [
-    "lib"
+    "lib",
+    "lib-esm"
   ],
   "jest": {
     "transform": {
