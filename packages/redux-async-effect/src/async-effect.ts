@@ -13,40 +13,49 @@ function isIterator<R>(value: any): value is AsyncIterator<R> | Iterator<R> {
 }
 
 /**
- * Creates an NgRx effect that fires off an async handler function.
- * Errors thrown by the handler are logged but swallowed, so the
- * effect is not killed because of the error.
+ * Creates an effect/epic that fires off a handler function,
+ * an async handler function, or an async generator for each
+ * value emitted by the input observable.
+ * A handler function or async handler function should return
+ * either an action to be dispatched, a tuple or array of actions
+ * to be dispatched in sequence, or undefined to not dispatch any actions.
+ * A generator or async generator handler should yield actions to be
+ * dispatched, or tuples/arrays of actions to be dispatched in
+ * sequence; if the generator does not yield anything no action
+ * gets dispatched.
+ * Errors thrown by the handler are logged but swallowed, so new
+ * values emitted by the input observable will fire off the handler again.
  * The optional configuration object has two (also optional)
  * configuration keys: passing switch as true will make the
  * effect use a switchMap instead of flatMap for processing the
- * promises it gets from the handler, and passing a logging function
- * will make the effect call that function with any errors instead
- * of logging to the console.
- * @param actions$ Actions object from NgRx, already filtered by ofType
- * @param handler async handler function
+ * inner stream it builds from the handler, and passing a logging function
+ * in the logger option will make the effect call that function with
+ * any errors instead of logging to the console.
+ * @param input input stream
+ * @param handler handler function/generator
  * @param config optional configuration object
  */
 export function asyncEffect<T, R extends Action | Action[]>(
-  actions$: Observable<T>,
-  handler: (action: T) => Promise<void | undefined | R> | AsyncIterator<R> | Iterator<R> | R,
+  input: Observable<T>,
+  handler: (value: T) => Promise<void | undefined | R> | AsyncIterator<R> | Iterator<R> | R,
   config: AsyncEffectConfig = {}
 ) {
-  return actions$.pipe(
-    (config.switch ? switchMap : flatMap)(action => {
-      const handlerResult = handler(action);
-      let stream: Observable<void | R>;
+  return input.pipe(
+    (config.switch ? switchMap : flatMap)(value => {
+      const handlerResult = handler(value);
+      let output: Observable<void | R>;
       if (handlerResult instanceof Promise) {
-        stream = from(handlerResult);
+        output = from(handlerResult);
       } else if (isIterator(handlerResult)) {
-        stream = new Observable<R>(subscriber => {
+        output = new Observable<R>(subscriber => {
           let live = true;
           const loop = async () => {
             while (live) {
-              const { value, done } = await handlerResult.next();
+              const { value: action, done } = await handlerResult.next();
               if (done) {
                 break;
               } else {
-                subscriber.next(value);
+                subscriber.next(action);
               }
             }
           };
@@ -56,9 +65,9 @@ export function asyncEffect<T, R extends Action | Action[]>(
           };
         });
       } else {
-        stream = of(handlerResult);
+        output = of(handlerResult);
       }
-      return stream.pipe(
+      return output.pipe(
         flatMap(actions => (Array.isArray(actions) ? actions : of(actions))),
         catchError(err => {
           if (config.logger) {
