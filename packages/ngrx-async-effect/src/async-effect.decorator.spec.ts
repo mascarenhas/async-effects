@@ -13,7 +13,11 @@ const logger2 = jest.fn();
 const logger3 = jest.fn();
 
 class FakeEffects {
-  constructor(public actions$: Observable<Action>) {}
+  constructor(
+    public actions$?: Observable<Action>,
+    public otherActions$?: Observable<Action>,
+    public otherStream$?: Observable<string>
+  ) {}
 
   @AsyncEffect(mockAction1.type)
   async handler1() {
@@ -89,6 +93,16 @@ class FakeEffects {
   @AsyncEffect(mockAction1.type)
   handler10() {
     return tuple({ type: 'ACTION2' }, { type: 'ACTION 2' });
+  }
+
+  @AsyncEffect({ stream: 'otherActions$' })
+  async handler11(action: any) {
+    return action;
+  }
+
+  @AsyncEffect({ stream: 'otherStream$' })
+  async handler12(s: string) {
+    return { type: s };
   }
 }
 
@@ -202,5 +216,19 @@ describe('AsyncEffect', () => {
     const effect = mockEffects.handler10$();
     const response = await effect.pipe(toArray()).toPromise();
     expect(response).toEqual(mockResponse);
+  });
+
+  it('passes action that matches type to handler and gets another action back', async () => {
+    const mockEffects: any = new FakeEffects(undefined, of(mockAction1));
+    const effect = mockEffects.handler11$();
+    const response = await effect.toPromise();
+    expect(response).toEqual(mockAction1);
+  });
+
+  it('passes observable from other stream to handler and and gets another action back', async () => {
+    const mockEffects: any = new FakeEffects(undefined, undefined, of('ACTION1'));
+    const effect = mockEffects.handler12$();
+    const response = await effect.toPromise();
+    expect(response).toEqual(mockAction1);
   });
 });
