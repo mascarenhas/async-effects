@@ -5,6 +5,7 @@ import { first, filter, toArray, debounceTime } from 'rxjs/operators';
 import { asyncEffect } from './async-effect';
 import { tuple } from './tuple';
 import { Action } from './action';
+import { delay } from './delay';
 
 function ofType(...types: string[]) {
   return filter((action: Action) => types.indexOf(action.type) !== -1);
@@ -239,5 +240,50 @@ describe('asyncEffect', () => {
     mockActions.complete();
     const response = await responsePromise;
     expect(response).toEqual([mockAction2]);
+  });
+
+  it('filters an action inside the handler', async () => {
+    const actions$ = new Subject<string>();
+    let processing = false;
+    const effect = asyncEffect(actions$, async (value: string) => {
+      if (value === 'foo' && !processing) {
+        try {
+          processing = true;
+          await delay(10);
+          return value.toUpperCase();
+        } finally {
+          processing = false;
+        }
+      }
+    });
+    const responsePromise = effect.pipe(toArray()).toPromise();
+    actions$.next('foo');
+    actions$.next('foo');
+    actions$.next('bar');
+    actions$.complete();
+    const response = await responsePromise;
+    expect(response).toEqual(['FOO']);
+  });
+
+  it('filters an action inside the handler', async () => {
+    function valueIf<T>(val: T, pred: boolean) {
+      return pred ? val : undefined;
+    }
+    const actions$ = new Subject<{ type: string }>();
+    let latest;
+    const effect = asyncEffect(actions$, async (value: { type: string }) => {
+      if (value.type === 'foo') {
+        latest = value;
+        await delay(10);
+        return valueIf(value.type.toUpperCase(), latest === value);
+      }
+    });
+    const responsePromise = effect.pipe(toArray()).toPromise();
+    actions$.next({ type: 'foo' });
+    actions$.next({ type: 'foo' });
+    actions$.next({ type: 'bar' });
+    actions$.complete();
+    const response = await responsePromise;
+    expect(response).toEqual(['FOO']);
   });
 });
