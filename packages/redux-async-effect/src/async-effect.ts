@@ -39,7 +39,7 @@ function isIterator<R>(value: any): value is AsyncIterator<R> | Iterator<R> {
  * @param handler handler function/generator
  * @param config optional configuration object
  */
-export function asyncEffect<T, R extends Action | Action[]>(
+export function asyncEffect<T, R>(
   input: Observable<T>,
   handler: (value: T) => Promise<R> | Promise<void | R> | AsyncIterator<R> | Iterator<R> | R | void,
   config: AsyncEffectConfig = {}
