@@ -3,13 +3,14 @@
   "version": "0.5.0",
   "description": "Consume a stream of and emit Redux actions with an async function/method or generator",
   "main": "lib/index.js",
+  "module": "lib-esm/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "cd src && tsc --p ./tsconfig.lib.json && tsc --p ./tsconfig.lib.json -m es6 --outDir ../lib-esm",
     "test": "jest",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare" : "npm run build",
-    "prepublishOnly" : "npm test"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test"
   },
   "repository": {
     "type": "git",
@@ -52,6 +53,11 @@
       "ts-jest": {
         "tsConfig": "./src/tsconfig.spec.json"
       }
+    }
+  },
+  "ngPackage": {
+    "lib": {
+      "entryFile": "public_api.ts"
     }
   }
 }

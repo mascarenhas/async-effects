@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Decorator for writing NgRx effects using async methods and/or async generator methods.",
   "main": "lib/index.js",
+  "module": "lib-esm/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "cd src && tsc --p ./tsconfig.lib.json && tsc --p ./tsconfig.lib.json -m es6 --outDir ../lib-esm",
