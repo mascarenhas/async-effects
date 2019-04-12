@@ -46,7 +46,8 @@
   "files": [
     "lib",
     "lib-esm",
-    "license"
+    "src",
+    "LICENSE"
   ],
   "jest": {
     "preset": "ts-jest",

@@ -1,6 +1,6 @@
 {
   "name": "redux-async-effect",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Consume a stream of and emit Redux actions with an async function/method or generator",
   "main": "lib/index.js",
   "module": "lib-esm/index.js",
@@ -45,6 +45,7 @@
   "files": [
     "lib",
     "lib-esm",
+    "src",
     "LICENSE"
   ],
   "jest": {
