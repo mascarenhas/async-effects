@@ -3,7 +3,7 @@ import { Action } from '@ngrx/store';
 import { identity, Observable, MonoTypeOperatorFunction } from 'rxjs';
 import { filter, debounceTime } from 'rxjs/operators';
 
-import { asyncEffect, AsyncEffectConfig, AsyncIterator } from 'redux-async-effect';
+import { asyncEffect, AsyncEffectConfig } from 'redux-async-effect';
 
 function ofType<A>(...types: string[]): MonoTypeOperatorFunction<A> {
   if (types.length === 0) {

@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/mascarenhas/async-effects#readme",
   "dependencies": {
-    "redux-async-effect": "^0.5.1"
+    "redux-async-effect": "^0.6.0"
   },
   "devDependencies": {
     "@angular/core": "^7.2.12",

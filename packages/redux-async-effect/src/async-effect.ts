@@ -1,18 +1,12 @@
-import { from, of, Observable } from 'rxjs';
+import { from, of, Observable, Observer } from 'rxjs';
 import { catchError, filter, flatMap, switchMap } from 'rxjs/operators';
-
-import { Action } from './action';
-
-export interface AsyncIterator<R> {
-  next: () => Promise<{ done: boolean; value: R }>;
-}
 
 export interface AsyncEffectConfig {
   readonly switch?: boolean;
   readonly logger?: (err: any) => any;
 }
 
-function isIterator<R>(value: any): value is AsyncIterator<R> | Iterator<R> {
+function isIterator<R>(value: any): value is AsyncIterableIterator<R> | Iterator<R> {
   return value.next !== undefined && value.return !== undefined && value.throw !== undefined;
 }
 
@@ -41,35 +35,80 @@ function isIterator<R>(value: any): value is AsyncIterator<R> | Iterator<R> {
  */
 export function asyncEffect<T, R>(
   input: Observable<T>,
-  handler: (value: T) => Promise<R> | Promise<void | R> | AsyncIterator<R> | Iterator<R> | R | void,
-  config: AsyncEffectConfig = {}
+  handler: (value: AsyncIterableIterator<T>) => AsyncIterableIterator<R> | IterableIterator<R>,
+  config: AsyncEffectConfig & { raw: true }
+): Observable<R extends (infer X)[] ? X : R>;
+export function asyncEffect<T, R>(
+  input: Observable<T>,
+  handler: (value: T) => Promise<R> | Promise<void | R> | AsyncIterableIterator<R> | IterableIterator<R> | R | void,
+  config?: AsyncEffectConfig
+): Observable<R extends (infer X)[] ? X : R>;
+export function asyncEffect<T, R>(
+  input: Observable<T>,
+  handler: any,
+  config: any = {}
 ): Observable<R extends (infer X)[] ? X : R> {
-  const innerStream = (value: T) => {
-    const handlerResult = handler(value);
-    let output: Observable<void | R>;
-    if (handlerResult instanceof Promise) {
-      output = from(handlerResult);
-    } else if (isIterator(handlerResult)) {
-      output = new Observable<R>(subscriber => {
-        let live = true;
-        const loop = async () => {
-          while (live) {
-            const { value: action, done } = await handlerResult.next();
-            if (done) {
-              break;
-            } else {
-              subscriber.next(action);
-            }
-          }
-        };
-        loop().then(() => subscriber.complete(), err => subscriber.error(err));
-        return () => {
-          live = false;
-        };
+  if (config.raw) {
+    const inputGenerator = async function*() {
+      const signalPromise: {
+        promise?: Promise<void>;
+        resolve?: () => void;
+        reject?: (err: any) => void;
+      } = {};
+      signalPromise.promise = new Promise((resolve, reject) => {
+        signalPromise.resolve = resolve;
+        signalPromise.reject = reject;
       });
-    } else {
-      output = of(handlerResult);
-    }
+      let done = false;
+      const buffer: T[] = [];
+      const observer: Observer<T> = {
+        next(v: T) {
+          buffer.push(v);
+          signalPromise.resolve!();
+        },
+        error(err: any) {
+          signalPromise.reject!(err);
+        },
+        complete() {
+          signalPromise.resolve!();
+          done = true;
+        }
+      };
+      const sub = input.subscribe(observer);
+      try {
+        while (!done) {
+          await signalPromise.promise!;
+          const elem = buffer.shift();
+          if (elem !== undefined) {
+            yield elem;
+          }
+        }
+        while (buffer.length > 0) {
+          const elem = buffer.shift();
+          if (elem !== undefined) {
+            yield elem;
+          }
+        }
+      } finally {
+        sub.unsubscribe();
+      }
+    };
+    const handlerResult = handler(inputGenerator()) as AsyncIterator<R> | IterableIterator<R>;
+    const output = new Observable<void | R>(subscriber => {
+      let done = false;
+      const loop = async () => {
+        for await (const action of handlerResult) {
+          if (done) {
+            break;
+          }
+          subscriber.next(action);
+        }
+      };
+      loop().then(() => subscriber.complete(), err => subscriber.error(err));
+      return () => {
+        done = true;
+      };
+    });
     return output.pipe(
       flatMap(actions => (Array.isArray(actions) ? actions : of(actions))),
       catchError(err => {
@@ -82,6 +121,50 @@ export function asyncEffect<T, R>(
       }),
       filter(x => x !== undefined)
     );
-  };
-  return input.pipe(config.switch ? switchMap(innerStream) : flatMap(innerStream));
+  } else {
+    const innerStream = (value: T) => {
+      const handlerResult = handler(value) as
+        | Promise<R>
+        | Promise<void | R>
+        | AsyncIterableIterator<R>
+        | IterableIterator<R>
+        | R
+        | void;
+      let output: Observable<void | R>;
+      if (handlerResult instanceof Promise) {
+        output = from(handlerResult);
+      } else if (isIterator(handlerResult)) {
+        output = new Observable<void | R>(subscriber => {
+          let done = false;
+          const loop = async () => {
+            for await (const action of handlerResult) {
+              if (done) {
+                break;
+              }
+              subscriber.next(action);
+            }
+          };
+          loop().then(() => subscriber.complete(), err => subscriber.error(err));
+          return () => {
+            done = true;
+          };
+        });
+      } else {
+        output = of(handlerResult);
+      }
+      return output.pipe(
+        flatMap(actions => (Array.isArray(actions) ? actions : of(actions))),
+        catchError(err => {
+          if (config.logger) {
+            config.logger(err);
+          } else {
+            console.error('Effect error:', err);
+          }
+          return of<void>();
+        }),
+        filter(x => x !== undefined)
+      );
+    };
+    return input.pipe(config.switch ? switchMap(innerStream) : flatMap(innerStream));
+  }
 }
