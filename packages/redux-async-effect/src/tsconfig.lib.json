@@ -3,6 +3,7 @@
   "compilerOptions": {
     "lib": [
       "es6",
+      "esnext.asynciterable",
       "dom"
     ]
   },

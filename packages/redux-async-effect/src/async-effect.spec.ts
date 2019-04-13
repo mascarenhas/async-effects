@@ -286,4 +286,23 @@ describe('asyncEffect', () => {
     const response = await responsePromise;
     expect(response).toEqual(['FOO']);
   });
+
+  it('passes action stream as iterator if raw: true', async () => {
+    const actions$ = new Subject<string>();
+    const effect = asyncEffect(
+      actions$,
+      async function*(input) {
+        for await (const action of input) {
+          yield action.toUpperCase();
+        }
+      },
+      { raw: true }
+    );
+    const responsePromise = effect.pipe(toArray()).toPromise();
+    actions$.next('foo');
+    actions$.next('bar');
+    actions$.complete();
+    const response = await responsePromise;
+    expect(response).toEqual(['FOO', 'BAR']);
+  });
 });
