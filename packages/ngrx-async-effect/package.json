@@ -33,7 +33,7 @@
     "redux-async-effect": "^0.5.1"
   },
   "devDependencies": {
-    "@angular/core": "^7.2.12",
+    "@angular/core": "^11.0.5",
     "@ngrx/store": "^7.4.0",
     "@ngrx/effects": "^7.4.0",
     "@types/jest": "^24.0.11",
